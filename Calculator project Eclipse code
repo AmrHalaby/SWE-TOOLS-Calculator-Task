@@ -1,0 +1,98 @@
+Package SWTOOLS;
+import java.util.list;
+import javax.ejb.Stateless;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.persistence.TypedQuery;
+import javax.ws.rs.Consume;
+import javax.ws.rs.GET;
+import javax.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+@Entity
+@Table(name = "calculations")
+public class Calculation {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "number1")
+    private int number1;
+
+    @Column(name = "number2")
+    private int number2;
+
+    @Column(name = "operation")
+    private String operation;
+
+    // Constructors, getters, and setters
+}
+@Path("/api/calc")
+public class CalculationResource {
+
+    @POST
+    public Response createCalculation(Calculation calculation) {
+        try {
+            int number1 = calculation.getNumber1();
+            int number2 = calculation.getNumber2();
+            String operation = calculation.getOperation();
+            int result = 0;
+            switch (operation) {
+                case "+":
+                    result = number1 + number2;
+                    break;
+                case "-":
+                    result = number1 - number2;
+                    break;
+                case "*":
+                    result = number1 * number2;
+                    break;
+                case "/":
+                    result = number1 / number2;
+                    break;
+                default:
+                    throw new IllegalArgumentException("Invalid operation: " + operation);
+            }
+            calculation.setResult(result);
+            EntityManager em = Persistence.createEntityManagerFactory("persistence-unit").createEntityManager();
+            em.getTransaction().begin();
+            em.persist(calculation);
+            em.getTransaction().commit();
+            return Response.ok().entity(new CalculationResult(result)).build();
+        } catch (Exception e) {
+            return Response.serverError().build();
+        }
+    }
+}
+@Path("/api/calculations")
+public class CalculationListResource {
+
+    @GET
+    public Response getCalculations() {
+        try {
+            EntityManager em = Persistence.createEntityManagerFactory("persistence-unit").createEntityManager();
+            TypedQuery<Calculation> query = em.createQuery("SELECT c FROM Calculation c", Calculation.class);
+            List<Calculation> calculations = query.getResultList();
+            return Response.ok().entity(calculations).build();
+        } catch (Exception e) {
+            return Response.serverError().build();
+        }
+    }
+}
+public class CalculationResult {
+    private int result;
+
+    public CalculationResult(int result) {
+        this.result = result;
+    }
+
+    public int getResult() {
+        return result;
+    }
+
+    public void setResult(int result) {
+        this.result = result;
+    }
+}
